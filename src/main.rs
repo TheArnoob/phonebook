@@ -10,6 +10,8 @@ fn main() {
     // map_writer(phone_book, "file2.txt".to_string()).expect("failed to write");
 
     loop {
+        println!("Enter one of these commands:");
+        println!("show, exit");
         let mut string = String::new();
         std::io::stdin().read_line(&mut string).unwrap();
         let parsed_string = string.trim().parse::<String>().unwrap();
