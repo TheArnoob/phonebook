@@ -1,15 +1,27 @@
 use std::{collections::BTreeMap, fs::read, io::Write};
 
 fn main() {
-    let mut phone_book = BTreeMap::new();
-    phone_book.insert("john".to_string(), "0505555555".to_string());
-    phone_book.insert("mark".to_string(), "0506666666".to_string());
-    phone_book.insert("jack".to_string(), "0507777777".to_string());
+    // let mut phone_book = BTreeMap::new();
+    // phone_book.insert("john".to_string(), "0505555555".to_string());
+    // phone_book.insert("mark".to_string(), "0506666666".to_string());
+    // phone_book.insert("jack".to_string(), "0507777777".to_string());
 
 
-    map_writer(phone_book, "file2.txt".to_string()).expect("failed to write");
-    let result = map_reader("file2.txt".to_string()).expect("Cannot read data");
-    println!("{:?}", result)
+    // map_writer(phone_book, "file2.txt".to_string()).expect("failed to write");
+
+    loop {
+        let mut string = String::new();
+        std::io::stdin().read_line(&mut string).unwrap();
+        let parsed_string = string.trim().parse::<String>().unwrap();
+        if parsed_string == "show" {
+            let result = map_reader("file2.txt".to_string()).expect("Cannot read data");
+            println!("{result:?}");
+        } else if parsed_string == "exit" {
+            return;
+        } else {
+            println!("try again")
+        }
+    }
 }
 
 fn map_writer(
@@ -25,6 +37,7 @@ fn map_writer(
             file.write_all("\n".as_bytes())?;
         }
     }
+
     Ok(())
 }
 
