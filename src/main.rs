@@ -1,17 +1,14 @@
 use std::{collections::BTreeMap, fs::read, io::Write};
 
 fn main() {
-    // let mut phone_book = BTreeMap::new();
     // phone_book.insert("john".to_string(), "0505555555".to_string());
     // phone_book.insert("mark".to_string(), "0506666666".to_string());
     // phone_book.insert("jack".to_string(), "0507777777".to_string());
 
 
-    // map_writer(phone_book, "file2.txt".to_string()).expect("failed to write");
-
     loop {
         println!("Enter one of these commands:");
-        println!("show, exit");
+        println!("show, exit, add");
         let mut string = String::new();
         std::io::stdin().read_line(&mut string).unwrap();
         let parsed_string = string.trim().parse::<String>().unwrap();
@@ -20,6 +17,18 @@ fn main() {
             println!("{result:?}");
         } else if parsed_string == "exit" {
             return;
+        } else if parsed_string == "add" {
+            println!("please enter a name");
+            let mut string1 = String::new();
+            std::io::stdin().read_line(&mut string1).unwrap();
+            println!("please enter a number");
+            let mut string2 = String::new();
+            //let phone_book = BTreeMap::new();   
+            std::io::stdin().read_line(&mut string2).unwrap();
+            //phone_book.insert(string1, string2);
+            let mut result = map_reader("file2.txt".to_string()).expect("Cannot read data");
+            result.insert(string1.trim().to_string(), string2.trim().to_string());
+            map_writer(result, "file2.txt".to_string()).expect("failed to write");
         } else {
             println!("try again")
         }
