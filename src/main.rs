@@ -1,19 +1,16 @@
 use std::{collections::BTreeMap, fs::read, io::Write};
 
+const FILE_NAME: &str = "file2.txt";
+
 fn main() {
-    // phone_book.insert("john".to_string(), "0505555555".to_string());
-    // phone_book.insert("mark".to_string(), "0506666666".to_string());
-    // phone_book.insert("jack".to_string(), "0507777777".to_string());
-
-
     loop {
-        println!("Enter one of these commands:");
-        println!("show, exit, add");
+        println!("Enter 1 of these commands:");
+        println!("show, exit, add, remove");
         let mut string = String::new();
         std::io::stdin().read_line(&mut string).unwrap();
         let parsed_string = string.trim().parse::<String>().unwrap();
         if parsed_string == "show" {
-            let result = map_reader("file2.txt".to_string()).expect("Cannot read data");
+            let result = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
             println!("{result:?}");
         } else if parsed_string == "exit" {
             return;
@@ -23,12 +20,23 @@ fn main() {
             std::io::stdin().read_line(&mut string1).unwrap();
             println!("please enter a number");
             let mut string2 = String::new();
-            //let phone_book = BTreeMap::new();   
             std::io::stdin().read_line(&mut string2).unwrap();
-            //phone_book.insert(string1, string2);
-            let mut result = map_reader("file2.txt".to_string()).expect("Cannot read data");
+            let mut result = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
             result.insert(string1.trim().to_string(), string2.trim().to_string());
-            map_writer(result, "file2.txt".to_string()).expect("failed to write");
+            map_writer(result, FILE_NAME.to_string()).expect("failed to write");
+        } else if parsed_string == "remove" {
+            println!("Please enter a name");
+            let mut string3: String = String::new();
+            std::io::stdin().read_line(&mut string3).unwrap();
+            let string3 = string3.trim().to_string();
+            let mut result = map_reader(FILE_NAME.to_string()).unwrap();
+            if result.contains_key(&string3) {
+                result.remove(&string3);
+                map_writer(result, FILE_NAME.to_string()).unwrap();
+                println!("Entry removed successfully")
+            } else if !result.contains_key(&string3) {
+                println!("The file dosen't contain the data");
+            }
         } else {
             println!("try again")
         }
@@ -53,7 +61,7 @@ fn map_writer(
 }
 
 fn map_reader(file_path: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
-    let r: Vec<u8> = read(file_path)?;
+    let r = read(file_path)?;
     let x = String::from_utf8(r)?;
     let x_split: Vec<&str> = x.split("\n").collect();
 
