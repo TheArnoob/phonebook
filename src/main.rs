@@ -1,40 +1,40 @@
-use std::{collections::BTreeMap, fs::read, io::Write};
+use std::{collections::BTreeMap, fs::read, io::Write,};
 
 const FILE_NAME: &str = "file.txt";
 
 fn main() {
     loop {
-        println!("Enter 1 of these commands:");
+        println!("Enter one of these commands:");
         println!("show, exit, add, remove");
-        let mut string = String::new();
-        std::io::stdin().read_line(&mut string).unwrap();
-        let parsed_string = string.trim().parse::<String>().unwrap();
-        if parsed_string == "show" {
-            let result = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
-            println!("{result:?}");
-        } else if parsed_string == "exit" {
+        let mut commands = String::new();
+        std::io::stdin().read_line(&mut commands).unwrap();
+        let parsed_command = commands.trim().parse::<String>().unwrap();
+        if parsed_command == "show" {
+            let phone_book = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
+            println!("{phone_book:?}");
+        } else if parsed_command == "exit" {
             return;
-        } else if parsed_string == "add" {
+        } else if parsed_command == "add" {
             println!("please enter a name");
-            let mut string1 = String::new();
-            std::io::stdin().read_line(&mut string1).unwrap();
+            let mut name = String::new();
+            std::io::stdin().read_line(&mut name).unwrap();
             println!("please enter a number");
-            let mut string2 = String::new();
-            std::io::stdin().read_line(&mut string2).unwrap();
-            let mut result = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
-            result.insert(string1.trim().to_string(), string2.trim().to_string());
-            map_writer(result, FILE_NAME.to_string()).expect("failed to write");
-        } else if parsed_string == "remove" {
+            let mut phone_number = String::new();
+            std::io::stdin().read_line(&mut phone_number).unwrap();
+            let mut phone_book = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
+            phone_book.insert(name.trim().to_string(), phone_number.trim().to_string());
+            map_writer(phone_book, FILE_NAME.to_string()).expect("failed to write");
+        } else if parsed_command == "remove" {
             println!("Please enter a name");
-            let mut string3: String = String::new();
-            std::io::stdin().read_line(&mut string3).unwrap();
-            let string3 = string3.trim().to_string();
-            let mut result = map_reader(FILE_NAME.to_string()).unwrap();
-            if result.contains_key(&string3) {
-                result.remove(&string3);
-                map_writer(result, FILE_NAME.to_string()).unwrap();
+            let mut name: String = String::new();
+            std::io::stdin().read_line(&mut name).unwrap();
+            let name = name.trim().to_string();
+            let mut phone_book = map_reader(FILE_NAME.to_string()).unwrap();
+            if phone_book.contains_key(&name) {
+                phone_book.remove(&name);
+                map_writer(phone_book, FILE_NAME.to_string()).unwrap();
                 println!("Entry removed successfully")
-            } else if !result.contains_key(&string3) {
+            } else if !phone_book.contains_key(&name) {
                 println!("The file dosen't contain the data");
             }
         } else {
@@ -60,20 +60,20 @@ fn map_writer(
     Ok(())
 }
 
-fn map_reader(file_path: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
-        if !std::path::PathBuf::from(&file_path).exists() {
+fn map_reader(file_path1: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
+        if !std::path::PathBuf::from(&file_path1).exists() {
             return Ok(BTreeMap::new());
         }
 
-        let r = read(file_path)?;
+        let r = read(file_path1)?;
         let x = String::from_utf8(r)?;
         let x_split: Vec<&str> = x.split("\n").collect();
-        let mut strings = BTreeMap::new();
+        let mut map = BTreeMap::new();
         for word in x_split {
             let word_split: Vec<&str> = word.split(": ").collect();
-            strings.insert(word_split[0].to_string(), word_split[1].to_string());
+            map.insert(word_split[0].to_string(), word_split[1].to_string());
    }
-   Ok(strings)    
+   Ok(map)    
 }
 
 
