@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs::read, io::Write,};
+use std::{collections::BTreeMap, fs::read, io::Write};
 
 const FILE_NAME: &str = "file.txt";
 
@@ -61,19 +61,17 @@ fn map_writer(
 }
 
 fn map_reader(file_path1: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
-        if !std::path::PathBuf::from(&file_path1).exists() {
-            return Ok(BTreeMap::new());
-        }
+    if !std::path::PathBuf::from(&file_path1).exists() {
+        return Ok(BTreeMap::new());
+    }
 
-        let r = read(file_path1)?;
-        let x = String::from_utf8(r)?;
-        let x_split: Vec<&str> = x.split("\n").collect();
-        let mut map = BTreeMap::new();
-        for word in x_split {
-            let word_split: Vec<&str> = word.split(": ").collect();
-            map.insert(word_split[0].to_string(), word_split[1].to_string());
-   }
-   Ok(map)    
+    let r = read(file_path1)?;
+    let x = String::from_utf8(r)?;
+    let x_split: Vec<&str> = x.split("\n").collect();
+    let mut map = BTreeMap::new();
+    for word in x_split {
+        let word_split: Vec<&str> = word.split(": ").collect();
+        map.insert(word_split[0].to_string(), word_split[1].to_string());
+    }
+    Ok(map)
 }
-
-
