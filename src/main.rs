@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fs::read, io::Write};
 
-const FILE_NAME: &str = "file2.txt";
+const FILE_NAME: &str = "file.txt";
 
 fn main() {
     loop {
@@ -61,14 +61,19 @@ fn map_writer(
 }
 
 fn map_reader(file_path: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
-    let r = read(file_path)?;
-    let x = String::from_utf8(r)?;
-    let x_split: Vec<&str> = x.split("\n").collect();
+        if !std::path::PathBuf::from(&file_path).exists() {
+            return Ok(BTreeMap::new());
+        }
 
-    let mut strings = BTreeMap::new();
-    for word in x_split {
-        let word_split: Vec<&str> = word.split(": ").collect();
-        strings.insert(word_split[0].to_string(), word_split[1].to_string());
-    }
-    Ok(strings)
+        let r = read(file_path)?;
+        let x = String::from_utf8(r)?;
+        let x_split: Vec<&str> = x.split("\n").collect();
+        let mut strings = BTreeMap::new();
+        for word in x_split {
+            let word_split: Vec<&str> = word.split(": ").collect();
+            strings.insert(word_split[0].to_string(), word_split[1].to_string());
+   }
+   Ok(strings)    
 }
+
+
