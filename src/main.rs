@@ -76,16 +76,16 @@ fn map_writer(
     Ok(())
 }
 
-fn map_reader(file_path1: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
-    if !std::path::PathBuf::from(&file_path1).exists() {
+fn map_reader(file_path: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
+    if !std::path::PathBuf::from(&file_path).exists() {
         return Ok(BTreeMap::new());
     }
 
-    let r = read(file_path1)?;
-    let x = String::from_utf8(r)?;
-    let x_split: Vec<&str> = x.split("\n").collect();
+    let file_bytes = read(file_path)?;
+    let file_as_string = String::from_utf8(file_bytes)?;
+    let file_lines: Vec<&str> = file_as_string.split("\n").collect();
     let mut map = BTreeMap::new();
-    for word in x_split {
+    for word in file_lines {
         let word_split: Vec<&str> = word.split(": ").collect();
         map.insert(word_split[0].to_string(), word_split[1].to_string());
     }
