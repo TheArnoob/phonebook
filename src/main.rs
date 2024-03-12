@@ -10,7 +10,7 @@ fn main() {
         std::io::stdin().read_line(&mut commands).unwrap();
         let parsed_command = commands.trim().parse::<String>().unwrap();
         if parsed_command == "show" {
-            let phone_book = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
+            let phone_book = map_reader(FILE_NAME.into()).expect("Cannot read data");
             println!("{phone_book:?}");
         } else if parsed_command == "exit" {
             return;
@@ -21,18 +21,18 @@ fn main() {
             println!("please enter a number");
             let mut phone_number = String::new();
             std::io::stdin().read_line(&mut phone_number).unwrap();
-            let mut phone_book = map_reader(FILE_NAME.to_string()).expect("Cannot read data");
+            let mut phone_book = map_reader(FILE_NAME.into()).expect("Cannot read data");
             phone_book.insert(name.trim().to_string(), phone_number.trim().to_string());
-            map_writer(phone_book, FILE_NAME.to_string()).expect("failed to write");
+            map_writer(phone_book, FILE_NAME.into()).expect("failed to write");
         } else if parsed_command == "remove" {
             println!("Please enter a name");
             let mut name: String = String::new();
             std::io::stdin().read_line(&mut name).unwrap();
             let name = name.trim().to_string();
-            let mut phone_book = map_reader(FILE_NAME.to_string()).unwrap();
+            let mut phone_book = map_reader(FILE_NAME.into()).unwrap();
             if phone_book.contains_key(&name) {
                 phone_book.remove(&name);
-                map_writer(phone_book, FILE_NAME.to_string()).unwrap();
+                map_writer(phone_book, FILE_NAME.into()).unwrap();
                 println!("Entry removed successfully")
             } else if !phone_book.contains_key(&name) {
                 println!("The file dosen't contain the data");
@@ -42,7 +42,7 @@ fn main() {
             let mut name = String::new();
             std::io::stdin().read_line(&mut name).unwrap();
             let name = name.trim().to_string();
-            let mut phone_book = map_reader(FILE_NAME.to_string()).unwrap();
+            let mut phone_book = map_reader(FILE_NAME.into()).unwrap();
             println!("Please enter the new number: ");
             let mut new_phone_number = String::new();
             std::io::stdin().read_line(&mut new_phone_number).unwrap();
@@ -52,7 +52,7 @@ fn main() {
                 Some(phone_number_in_phone_book) => *phone_number_in_phone_book = new_phone_number,
                 None => println!("the file dosen't contain the entry"),
             }
-            map_writer(phone_book, FILE_NAME.to_string()).unwrap();
+            map_writer(phone_book, FILE_NAME.into()).unwrap();
         } else {
             println!("try again")
         }
@@ -61,7 +61,7 @@ fn main() {
 
 fn map_writer(
     phone_book: BTreeMap<String, String>,
-    file_path: String,
+    file_path: std::path::PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut file = std::fs::File::create(file_path)?;
     for (i, (name, phone_number)) in phone_book.iter().enumerate() {
@@ -76,8 +76,8 @@ fn map_writer(
     Ok(())
 }
 
-fn map_reader(file_path: String) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
-    if !std::path::PathBuf::from(&file_path).exists() {
+fn map_reader(file_path: std::path::PathBuf) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
+    if !file_path.exists() {
         return Ok(BTreeMap::new());
     }
 
