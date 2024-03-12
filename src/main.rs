@@ -5,7 +5,7 @@ const FILE_NAME: &str = "file.txt";
 fn main() {
     loop {
         println!("Enter one of these commands:");
-        println!("show, exit, add, remove");
+        println!("show, exit, add, remove, modify");
         let mut commands = String::new();
         std::io::stdin().read_line(&mut commands).unwrap();
         let parsed_command = commands.trim().parse::<String>().unwrap();
@@ -37,6 +37,22 @@ fn main() {
             } else if !phone_book.contains_key(&name) {
                 println!("The file dosen't contain the data");
             }
+        } else if parsed_command == "modify" {
+            println!("Please enter a name to modify:");
+            let mut name = String::new();
+            std::io::stdin().read_line(&mut name).unwrap();
+            let name = name.trim().to_string();
+            let mut phone_book = map_reader(FILE_NAME.to_string()).unwrap();
+            println!("Please enter the new number: ");
+            let mut new_phone_number = String::new();
+            std::io::stdin().read_line(&mut new_phone_number).unwrap();
+            let new_phone_number = new_phone_number.trim().to_string();
+            let mutable_entry = phone_book.get_mut(&name);
+            match mutable_entry {
+                Some(phone_number_in_phone_book) => *phone_number_in_phone_book = new_phone_number,
+                None => println!("the file dosen't contain the entry"),
+            }
+            map_writer(phone_book, FILE_NAME.to_string()).unwrap();
         } else {
             println!("try again")
         }
