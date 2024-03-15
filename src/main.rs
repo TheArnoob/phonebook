@@ -2,6 +2,11 @@ use std::{collections::BTreeMap, fs::read, io::Write};
 
 const FILE_NAME: &str = "file.txt";
 
+#[derive(Debug)]
+struct PhoneEntry {
+    mobile: String,
+}
+
 fn main() {
     loop {
         println!("Enter one of these commands:");
@@ -15,7 +20,12 @@ fn main() {
             let name = get_input_from_user("Please enter a name");
             let phone_number = get_input_from_user("Please enter a phone_number");
             let mut phone_book = map_reader(FILE_NAME.into()).expect("Cannot read data");
-            phone_book.insert(name, phone_number);
+            phone_book.insert(
+                name,
+                PhoneEntry {
+                    mobile: phone_number,
+                },
+            );
             map_writer(phone_book, FILE_NAME.into()).expect("failed to write");
         } else if command == "remove" {
             let name = get_input_from_user("Please enter a name to remove");
@@ -33,7 +43,11 @@ fn main() {
             let new_phone_number = get_input_from_user("please enter the new phone number");
             let mutable_entry = phone_book.get_mut(&name);
             match mutable_entry {
-                Some(phone_number_in_phone_book) => *phone_number_in_phone_book = new_phone_number,
+                Some(phone_number_in_phone_book) => {
+                    *phone_number_in_phone_book = PhoneEntry {
+                        mobile: new_phone_number,
+                    }
+                }
                 None => println!("the file dosen't contain the entry"),
             }
             map_writer(phone_book, FILE_NAME.into()).unwrap();
@@ -44,14 +58,14 @@ fn main() {
 }
 
 fn map_writer(
-    phone_book: BTreeMap<String, String>,
+    phone_book: BTreeMap<String, PhoneEntry>,
     file_path: std::path::PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut file = std::fs::File::create(file_path)?;
-    for (i, (name, phone_number)) in phone_book.iter().enumerate() {
+    for (i, (name, phone_entry)) in phone_book.iter().enumerate() {
         file.write_all(name.as_bytes())?;
         file.write_all(": ".as_bytes())?;
-        file.write_all(phone_number.as_bytes())?;
+        file.write_all(phone_entry.mobile.as_bytes())?;
         if i != phone_book.len() - 1 {
             file.write_all("\n".as_bytes())?;
         }
@@ -62,7 +76,7 @@ fn map_writer(
 
 fn map_reader(
     file_path: std::path::PathBuf,
-) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
+) -> Result<BTreeMap<String, PhoneEntry>, Box<dyn std::error::Error>> {
     if !file_path.exists() {
         return Ok(BTreeMap::new());
     }
@@ -72,8 +86,16 @@ fn map_reader(
     let file_lines: Vec<&str> = file_as_string.split("\n").collect();
     let mut map = BTreeMap::new();
     for word in file_lines {
+        if word == "" {
+            continue;
+        }
         let word_split: Vec<&str> = word.split(": ").collect();
-        map.insert(word_split[0].to_string(), word_split[1].to_string());
+        map.insert(
+            word_split[0].to_string(),
+            PhoneEntry {
+                mobile: word_split[1].to_string(),
+            },
+        );
     }
     Ok(map)
 }
