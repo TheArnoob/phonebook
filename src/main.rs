@@ -4,6 +4,8 @@ const FILE_NAME: &str = "file.txt";
 
 mod entry;
 
+use prettytable::{row, Table};
+
 use crate::entry::PhoneEntry;
 
 fn main() {
@@ -11,13 +13,14 @@ fn main() {
         println!("Enter one of these commands:");
         let command = get_input_from_user("show, add, remove, modify, exit");
         if command == "show" {
-            let phone_book = map_reader(FILE_NAME.into()).expect("Cannot read data");
-            println!("{phone_book:?}");
+            let phone_book =
+                map_reader(FILE_NAME.into()).expect("Cannot read data");
+            show_phone_book(&phone_book);
         } else if command == "exit" {
             return;
         } else if command == "add" {
             let name = get_input_from_user("Please enter a name");
-            let phone_number = get_input_from_user("Please enter a phone_number");
+            let phone_number = get_input_from_user("Please enter a phone number");
             let phone_number1 = get_input_from_user("please enter another number");
             let mut phone_book = map_reader(FILE_NAME.into()).expect("Cannot read data");
             phone_book.insert(
@@ -113,4 +116,17 @@ fn get_input_from_user(message: &str) -> String {
     std::io::stdin().read_line(&mut name).unwrap();
     let name = name.trim().to_string();
     name
+}
+
+fn show_phone_book(phone_book: &BTreeMap<String, PhoneEntry>) {
+    if !phone_book.is_empty() {
+        let mut table = Table::new();
+        table.add_row(row!("Name", "Mobile number", "Work number"));
+        for (name, phone_entry) in phone_book {
+            table.add_row(row!(name, phone_entry.mobile, phone_entry.work));
+        }
+        table.printstd();
+    } else {
+        println!("The phone book is empty.");
+    }
 }
