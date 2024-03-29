@@ -10,6 +10,7 @@ impl PhoneBookDB {
             file_path1: file_path,
         }
     }
+
     pub fn write(
         &self,
         phone_book: BTreeMap<String, PhoneEntry>,
@@ -37,13 +38,13 @@ impl PhoneBookDB {
         let file_bytes = read(&self.file_path1)?;
         let file_as_string = String::from_utf8(file_bytes)?;
         let file_lines: Vec<&str> = file_as_string.split("\n").collect();
-        let mut map = BTreeMap::new();
+        let mut phone_book = BTreeMap::new();
         for word in file_lines {
             if word == "" {
                 continue;
             }
             let word_split: Vec<&str> = word.split(": ").collect();
-            map.insert(
+            phone_book.insert(
                 word_split[0].to_string(),
                 PhoneEntry {
                     mobile: word_split[1].to_string(),
@@ -51,6 +52,44 @@ impl PhoneBookDB {
                 },
             );
         }
-        Ok(map)
+        Ok(phone_book)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use crate::{database::PhoneBookDB, entry::PhoneEntry};
+
+    #[test]
+    fn read_in_file() {
+        let file_path = "test_file.txt";
+        let phone_book = PhoneBookDB::new(file_path.into());
+        let data = phone_book.read().unwrap();
+        assert_eq!(data.is_empty(), true)
+    }
+
+    #[test]
+    fn write_in_file() {
+        let file_path = "test_file1.txt";
+        let phone_book = PhoneBookDB::new(file_path.into());
+        let data = phone_book.read().unwrap();
+        assert_eq!(data.is_empty(), true);
+        let mut map = BTreeMap::new();
+        map.insert(
+            "cat".to_string(),
+            PhoneEntry {
+                mobile: "0".to_string(),
+                work: "1".to_string(),
+            },
+        );
+        phone_book.write(map).unwrap();
+        let data1 = phone_book.read().unwrap();
+        assert_eq!(data1.contains_key("cat"), true);
+        let entry = data1.get("cat").unwrap();
+        assert_eq!(entry, &PhoneEntry {mobile: "0".to_string(), work: "1".to_string()});
+        // Clean up the test file
+        std::fs::remove_file(&std::path::PathBuf::from(file_path)).unwrap();
     }
 }
