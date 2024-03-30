@@ -13,7 +13,7 @@ impl PhoneBookDB {
 
     pub fn write(
         &self,
-        phone_book: BTreeMap<String, PhoneEntry>,
+        phone_book: &BTreeMap<String, PhoneEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = std::fs::File::create(&self.file_path1)?;
         for (i, (name, phone_entry)) in phone_book.iter().enumerate() {
@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn write_in_file() {
-        let file_path = "test_file1.txt";
+        let file_path = "text_file1.txt";
         let phone_book = PhoneBookDB::new(file_path.into());
         let data = phone_book.read().unwrap();
         assert_eq!(data.is_empty(), true);
@@ -84,12 +84,40 @@ mod tests {
                 work: "1".to_string(),
             },
         );
-        phone_book.write(map).unwrap();
+        phone_book.write(&map).unwrap();
         let data1 = phone_book.read().unwrap();
         assert_eq!(data1.contains_key("cat"), true);
         let entry = data1.get("cat").unwrap();
         assert_eq!(entry, &PhoneEntry {mobile: "0".to_string(), work: "1".to_string()});
         // Clean up the test file
+        std::fs::remove_file(&std::path::PathBuf::from(file_path)).unwrap();
+    }
+
+    #[test]
+    fn read_empty_file() {
+        let file_path = "test_file2.txt";
+        // Check if the file exists and if it exists delete it.
+        if std::path::PathBuf::from(file_path).exists(){
+            std::fs::remove_file(file_path).unwrap();
+        }
+        let phone_book = PhoneBookDB::new(file_path.into());
+        // Make a new map.
+        let mut map = BTreeMap::new();
+        // read the phone book database.
+        let data = phone_book.read().expect("Cannot read the data from the file.");
+        // Assert that there is no data read.
+        assert_eq!(data.is_empty(), true);
+        map.insert("Arnold".to_string(), PhoneEntry {mobile: "050343456".to_string(), work: "05043434332".to_string()});
+        phone_book.write(&map).expect("Cannot write the map");
+        map.remove_entry(&"Arnold".to_string());
+        // Assert that there is no data read.
+        assert_eq!(map.is_empty(), true);
+        phone_book.write(&map).expect("Cannot write the map.");
+        // read the data
+        let data1 = phone_book.read().expect("Cannot read the data from the file.");
+        // Assert that there is no data read.
+        assert_eq!(data1.is_empty(), true);
+        // Clean up the file.
         std::fs::remove_file(&std::path::PathBuf::from(file_path)).unwrap();
     }
 }

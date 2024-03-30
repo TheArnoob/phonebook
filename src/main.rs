@@ -31,7 +31,7 @@ fn main() {
                     work: phone_number1,
                 },
             );
-            phone_book_db.write(phone_book).expect("Cannot write data");
+            phone_book_db.write(&phone_book).expect("Cannot write data");
         } else if command == "remove" {
             let name = get_input_from_user("Please enter a name to remove");
             let mut phone_book = phone_book_db
@@ -39,7 +39,7 @@ fn main() {
                 .expect("Cannot read the data from the file.");
             if phone_book.contains_key(&name) {
                 phone_book.remove(&name);
-                phone_book_db.write(phone_book).expect("Cannot write data");
+                phone_book_db.write(&phone_book).expect("Cannot write data");
                 println!("Entry removed successfully")
             } else if !phone_book.contains_key(&name) {
                 println!("The file dosen't contain the data");
@@ -59,7 +59,7 @@ fn main() {
                         mobile: new_phone_number,
                         work: new_phone_number1,
                     };
-                    phone_book_db.write(phone_book).expect("Cannot write data");
+                    phone_book_db.write(&phone_book).expect("Cannot write data");
                 }
                 None => println!("the file dosen't contain the entry"),
             }
