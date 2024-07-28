@@ -1,4 +1,4 @@
-const FILE_NAME: &str = "file.txt";
+const FILE_NAME: &str = "file.sqlite";
 use std::collections::BTreeMap;
 mod database;
 mod entry;
@@ -38,7 +38,7 @@ fn main() {
                 .read()
                 .expect("Cannot read the data from the file.");
             if phone_book.contains_key(&name) {
-                phone_book.remove(&name);
+                phone_book.remove_entry(&name);
                 phone_book_db.write(&phone_book).expect("Cannot write data");
                 println!("Entry removed successfully")
             } else if !phone_book.contains_key(&name) {
@@ -81,10 +81,10 @@ fn show_phone_book(phone_book: &BTreeMap<String, PhoneEntry>) {
     if !phone_book.is_empty() {
         let mut table = Table::new();
         table.add_row(row!("Name", "Mobile number", "Work number"));
-        for (name, phone_entry) in phone_book {
+        phone_book.into_iter().for_each(|(name, phone_entry)| {
             table.add_row(row!(name, phone_entry.mobile, phone_entry.work));
-        }
-        table.printstd();
+        });
+        table.printstd()
     } else {
         println!("The phone book is empty.");
     }
