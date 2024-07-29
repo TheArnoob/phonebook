@@ -11,13 +11,15 @@ fn main() {
         println!("Please enter one of these commands:");
         let command = get_input_from_user("show, add, remove, modify, exit");
         if command == "show" {
-            let phone_book = phone_book_db.read().expect("Cannot read data");
+            let phone_book = phone_book_db.read_all_entries().expect("Cannot read data");
             show_phone_book(&phone_book);
         } else if command == "exit" {
             return;
         } else if command == "add" {
             let name = get_input_from_user("Please enter a name");
-            let mut phone_book = phone_book_db.read().expect("Cannot find the file.");
+            let mut phone_book = phone_book_db
+                .read_all_entries()
+                .expect("Cannot find the file.");
             if phone_book.contains_key(&name) {
                 println!("The name already exists.");
                 continue;
@@ -31,15 +33,19 @@ fn main() {
                     work: phone_number1,
                 },
             );
-            phone_book_db.write(&phone_book).expect("Cannot write data");
+            phone_book_db
+                .write_all_entries(&phone_book)
+                .expect("Cannot write data");
         } else if command == "remove" {
             let name = get_input_from_user("Please enter a name to remove");
             let mut phone_book = phone_book_db
-                .read()
+                .read_all_entries()
                 .expect("Cannot read the data from the file.");
             if phone_book.contains_key(&name) {
                 phone_book.remove_entry(&name);
-                phone_book_db.write(&phone_book).expect("Cannot write data");
+                phone_book_db
+                    .write_all_entries(&phone_book)
+                    .expect("Cannot write data");
                 println!("Entry removed successfully")
             } else if !phone_book.contains_key(&name) {
                 println!("The file dosen't contain the data");
@@ -47,7 +53,7 @@ fn main() {
         } else if command == "modify" {
             let name = get_input_from_user("Please enter a name to modify: ");
             let mut phone_book = phone_book_db
-                .read()
+                .read_all_entries()
                 .expect("Cannot read the data from the file.");
             let mutable_entry = phone_book.get_mut(&name);
             match mutable_entry {
@@ -59,7 +65,9 @@ fn main() {
                         mobile: new_phone_number,
                         work: new_phone_number1,
                     };
-                    phone_book_db.write(&phone_book).expect("Cannot write data");
+                    phone_book_db
+                        .write_all_entries(&phone_book)
+                        .expect("Cannot write data");
                 }
                 None => println!("the file dosen't contain the entry"),
             }

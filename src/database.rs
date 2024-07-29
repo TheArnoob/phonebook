@@ -13,7 +13,7 @@ impl PhoneBookDB {
         }
     }
 
-    pub fn write(
+    pub fn write_all_entries(
         &self,
         phone_book: &BTreeMap<String, PhoneEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -32,7 +32,9 @@ impl PhoneBookDB {
         Ok(())
     }
 
-    pub fn read(&self) -> Result<BTreeMap<String, PhoneEntry>, Box<dyn std::error::Error>> {
+    pub fn read_all_entries(
+        &self,
+    ) -> Result<BTreeMap<String, PhoneEntry>, Box<dyn std::error::Error>> {
         let conn = Connection::open(&self.file_path1)?;
         conn.execute("CREATE TABLE IF NOT EXISTS phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)", ())?;
         let mut stmt = conn.prepare("SELECT name, phone_number, work_number FROM phone_book")?;
@@ -69,7 +71,7 @@ mod tests {
     fn read_in_file() {
         let file_path = "test_file.txt";
         let phone_book = PhoneBookDB::new(file_path.into());
-        let data = phone_book.read().unwrap();
+        let data = phone_book.read_all_entries().unwrap();
         assert_eq!(data.is_empty(), true)
     }
 
@@ -77,7 +79,7 @@ mod tests {
     fn write_in_file() {
         let file_path = "text_file1.txt";
         let phone_book = PhoneBookDB::new(file_path.into());
-        let data = phone_book.read().unwrap();
+        let data = phone_book.read_all_entries().unwrap();
         assert_eq!(data.is_empty(), true);
         let mut map = BTreeMap::new();
         map.insert(
@@ -87,8 +89,8 @@ mod tests {
                 work: "1".to_string(),
             },
         );
-        phone_book.write(&map).unwrap();
-        let data1 = phone_book.read().unwrap();
+        phone_book.write_all_entries(&map).unwrap();
+        let data1 = phone_book.read_all_entries().unwrap();
         assert_eq!(data1.contains_key("cat"), true);
         let entry = data1.get("cat").unwrap();
         assert_eq!(
@@ -114,7 +116,7 @@ mod tests {
         let mut map = BTreeMap::new();
         // read the phone book database.
         let data = phone_book
-            .read()
+            .read_all_entries()
             .expect("Cannot read the data from the file.");
         // Assert that there is no data read.
         assert_eq!(data.is_empty(), true);
@@ -125,14 +127,18 @@ mod tests {
                 work: "05043434332".to_string(),
             },
         );
-        phone_book.write(&map).expect("Cannot write the map");
+        phone_book
+            .write_all_entries(&map)
+            .expect("Cannot write the map");
         map.remove_entry(&"Arnold".to_string());
         // Assert that there is no data read.
         assert_eq!(map.is_empty(), true);
-        phone_book.write(&map).expect("Cannot write the map.");
+        phone_book
+            .write_all_entries(&map)
+            .expect("Cannot write the map.");
         // read the data
         let data1 = phone_book
-            .read()
+            .read_all_entries()
             .expect("Cannot read the data from the file.");
         // Assert that there is no data read.
         assert_eq!(data1.is_empty(), true);
