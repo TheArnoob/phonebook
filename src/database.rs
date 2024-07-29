@@ -20,8 +20,9 @@ impl PhoneBookDB {
         let conn = Connection::open(&self.file_path1)?;
 
         conn.execute("CREATE TABLE IF NOT EXISTS phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)", ())?;
-
-        for (i, (name, phone_entry)) in phone_book.iter().enumerate() {
+        // To clear the table before inserting the new entries
+        conn.execute("DELETE FROM phone_book", ())?;
+        for (name, phone_entry) in phone_book.iter() {
             conn.execute(
                 "INSERT INTO phone_book (name, phone_number, work_number) VALUES (?1, ?2, ?3)",
                 (name, &phone_entry.mobile, &phone_entry.work),
@@ -46,7 +47,6 @@ impl PhoneBookDB {
 
         for phone_book_entry in phone_book_iter {
             let phone_book_entry = phone_book_entry.unwrap();
-            println!("{:?}", phone_book_entry);
             phone_book.insert(
                 phone_book_entry.0,
                 PhoneEntry {
@@ -55,6 +55,7 @@ impl PhoneBookDB {
                 },
             );
         }
+
         Ok(phone_book)
     }
 }
