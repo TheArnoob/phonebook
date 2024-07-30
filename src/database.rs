@@ -35,6 +35,30 @@ impl PhoneBookDB {
     pub fn read_all_entries(
         &self,
     ) -> Result<BTreeMap<String, PhoneEntry>, Box<dyn std::error::Error>> {
+        let data = self.read_all_entries_as_vec()?;
+
+        let phone_book = data.into_iter().collect();
+        Ok(phone_book)
+    }
+
+    pub fn write_entry(
+        &self,
+        name: String,
+        entry: PhoneEntry,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let conn = Connection::open(&self.file_path1)?;
+        conn.execute("CREATE TABLE IF NOT EXISTS phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)", ())?;
+        conn.execute(
+            "INSERT INTO phone_book (name, phone_number, work_number) VALUES(?1, ?2, ?3)",
+            (name, entry.mobile, entry.work),
+        )?;
+
+        Ok(())
+    }
+
+    fn read_all_entries_as_vec(
+        &self,
+    ) -> Result<Vec<(String, PhoneEntry)>, Box<dyn std::error::Error>> {
         let conn = Connection::open(&self.file_path1)?;
         conn.execute("CREATE TABLE IF NOT EXISTS phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)", ())?;
         let mut stmt = conn.prepare("SELECT name, phone_number, work_number FROM phone_book")?;
@@ -45,17 +69,17 @@ impl PhoneBookDB {
 
             Ok((name, phone_number, work_number))
         })?;
-        let mut phone_book = BTreeMap::new();
+        let mut phone_book = Vec::new();
 
         for phone_book_entry in phone_book_iter {
             let phone_book_entry = phone_book_entry.unwrap();
-            phone_book.insert(
+            phone_book.push((
                 phone_book_entry.0,
                 PhoneEntry {
                     mobile: phone_book_entry.1,
                     work: phone_book_entry.2,
                 },
-            );
+            ));
         }
 
         Ok(phone_book)
@@ -144,5 +168,45 @@ mod tests {
         assert_eq!(data1.is_empty(), true);
         // Clean up the file.
         std::fs::remove_file(&std::path::PathBuf::from(file_path)).unwrap();
+    }
+
+    #[test]
+    fn single_writes() {
+        let file_path = "test_file3.txt";
+
+        let phone_book_db = PhoneBookDB::new(file_path.into());
+        phone_book_db
+            .write_entry(
+                "Arnold".to_owned(),
+                PhoneEntry {
+                    mobile: "9027590".to_owned(),
+                    work: "3795780357".to_owned(),
+                },
+            )
+            .unwrap();
+        phone_book_db
+            .write_entry(
+                "Maram".to_owned(),
+                PhoneEntry {
+                    mobile: "02875902".to_owned(),
+                    work: "98270987".to_owned(),
+                },
+            )
+            .unwrap();
+        let read_phone_book_db = phone_book_db.read_all_entries_as_vec().unwrap();
+        assert!(read_phone_book_db.contains(&(
+            "Arnold".to_owned(),
+            PhoneEntry {
+                mobile: "9027590".to_owned(),
+                work: "3795780357".to_owned(),
+            },
+        )));
+        assert!(read_phone_book_db.contains(&(
+            "Maram".to_owned(),
+            PhoneEntry {
+                mobile: "02875902".to_owned(),
+                work: "98270987".to_owned(),
+            },
+        )));
     }
 }
