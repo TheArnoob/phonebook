@@ -13,13 +13,26 @@ impl PhoneBookDB {
         }
     }
 
+    fn create_table_if_not_exists(&self) -> Result<()> {
+        let conn = Connection::open(&self.file_path1)?;
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS
+         phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)",
+            (),
+        )?;
+
+        Ok(())
+    }
+
     pub fn write_all_entries(
         &self,
         phone_book: &BTreeMap<String, PhoneEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        self.create_table_if_not_exists()?;
+
         let conn = Connection::open(&self.file_path1)?;
 
-        conn.execute("CREATE TABLE IF NOT EXISTS phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)", ())?;
         // To clear the table before inserting the new entries
         conn.execute("DELETE FROM phone_book", ())?;
         for (name, phone_entry) in phone_book.iter() {
@@ -46,8 +59,9 @@ impl PhoneBookDB {
         name: String,
         entry: PhoneEntry,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        self.create_table_if_not_exists()?;
+
         let conn = Connection::open(&self.file_path1)?;
-        conn.execute("CREATE TABLE IF NOT EXISTS phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)", ())?;
         conn.execute(
             "INSERT INTO phone_book (name, phone_number, work_number) VALUES(?1, ?2, ?3)",
             (name, entry.mobile, entry.work),
@@ -59,8 +73,9 @@ impl PhoneBookDB {
     fn read_all_entries_as_vec(
         &self,
     ) -> Result<Vec<(String, PhoneEntry)>, Box<dyn std::error::Error>> {
+        self.create_table_if_not_exists()?;
+
         let conn = Connection::open(&self.file_path1)?;
-        conn.execute("CREATE TABLE IF NOT EXISTS phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)", ())?;
         let mut stmt = conn.prepare("SELECT name, phone_number, work_number FROM phone_book")?;
         let phone_book_iter = stmt.query_map([], |row| {
             let name: String = row.get("name")?;
