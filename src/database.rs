@@ -25,6 +25,21 @@ impl PhoneBookDB {
         Ok(())
     }
 
+    pub fn modify_entry(
+        &self,
+        name: String,
+        entry: PhoneEntry,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.create_table_if_not_exists()?;
+        let conn = Connection::open(&self.file_path1)?;
+        conn.execute(
+            "UPDATE phone_book SET phone_number = ?2, work_number = ?3 WHERE name = ?1",
+            [&name, &entry.mobile, &entry.work],
+        )?;
+
+        Ok(())
+    }
+
     pub fn write_all_entries(
         &self,
         phone_book: &BTreeMap<String, PhoneEntry>,
@@ -390,5 +405,84 @@ mod tests {
                 }
             )]
         )
+    }
+
+    #[test]
+    fn modify_entries() {
+        let file_path = "test_file6";
+        let phone_book_db = PhoneBookDB::new(file_path.into());
+        phone_book_db
+            .write_entry(
+                "Arnold".to_owned(),
+                PhoneEntry {
+                    mobile: "83749876389".to_owned(),
+                    work: "3758937498".to_owned(),
+                },
+            )
+            .unwrap();
+
+        phone_book_db
+            .write_entry(
+                "Maram".to_owned(),
+                PhoneEntry {
+                    mobile: "938759834".to_owned(),
+                    work: "73598739074".to_owned(),
+                },
+            )
+            .unwrap();
+
+        phone_book_db
+            .modify_entry(
+                "Arnold".to_owned(),
+                PhoneEntry {
+                    mobile: "938759834".to_owned(),
+                    work: "73598739074".to_owned(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            phone_book_db
+                .read_all_entries_as_vec(Some(String::from("Arnold")))
+                .unwrap(),
+            vec![(
+                "Arnold".to_owned(),
+                PhoneEntry {
+                    mobile: "938759834".to_owned(),
+                    work: "73598739074".to_owned(),
+                },
+            )]
+        );
+    }
+    #[test]
+    fn modify_entries_not_exist() {
+        let file_path = "test_file7";
+        let phone_book_db = PhoneBookDB::new(file_path.into());
+        phone_book_db
+            .write_entry(
+                "Maram".to_owned(),
+                PhoneEntry {
+                    mobile: "938759834".to_owned(),
+                    work: "73598739074".to_owned(),
+                },
+            )
+            .unwrap();
+
+        phone_book_db
+            .modify_entry(
+                "Arnold".to_owned(),
+                PhoneEntry {
+                    mobile: "938759834".to_owned(),
+                    work: "73598739074".to_owned(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            phone_book_db
+                .read_all_entries_as_vec(Some(String::from("Arnold")))
+                .unwrap(),
+            vec![]
+        );
     }
 }
