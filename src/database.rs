@@ -60,6 +60,13 @@ impl PhoneBookDB {
         Ok(())
     }
 
+    pub fn remove_entry(&self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
+        self.create_table_if_not_exists()?;
+        let conn = Connection::open(&self.file_path1)?;
+
+        conn.execute("DELETE FROM phone_book WHERE name = ?1", [name])?;
+        Ok(())
+    }
     pub fn read_all_entries(
         &self,
     ) -> Result<BTreeMap<String, PhoneEntry>, Box<dyn std::error::Error>> {
@@ -87,10 +94,10 @@ impl PhoneBookDB {
         Ok(())
     }
 
-    /// Searches for names of the entries with the name you give it
-    /// If name is None it will return all entries
+    /// Searches for names of the entries with the name you give it.
+    /// If name is None it will return all entries.
     /// And if the name is Some(String::from(...)),
-    /// it will for the search names of the entries with the name you give it in the database
+    /// it will for the search names of the entries with the name you give it in the database.
     fn read_all_entries_as_vec(
         &self,
         name: Option<String>,
@@ -410,7 +417,10 @@ mod tests {
     #[test]
     fn modify_entries() {
         let file_path = "test_file6";
+        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
+
         let phone_book_db = PhoneBookDB::new(file_path.into());
+
         phone_book_db
             .write_entry(
                 "Arnold".to_owned(),
@@ -457,6 +467,9 @@ mod tests {
     #[test]
     fn modify_entries_not_exist() {
         let file_path = "test_file7";
+
+        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
+
         let phone_book_db = PhoneBookDB::new(file_path.into());
         phone_book_db
             .write_entry(
@@ -481,6 +494,102 @@ mod tests {
         assert_eq!(
             phone_book_db
                 .read_all_entries_as_vec(Some(String::from("Arnold")))
+                .unwrap(),
+            vec![]
+        );
+    }
+
+    #[test]
+    fn writes_then_removes() {
+        let file_path = "test_file8.txt";
+        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
+
+        let phone_book_db = PhoneBookDB::new(file_path.into());
+
+        assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
+
+        phone_book_db.remove_entry("Arnold").unwrap();
+        assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
+
+        assert_eq!(
+            phone_book_db
+                .read_all_entries_as_vec(Some(String::from("Arnold")))
+                .unwrap(),
+            vec![]
+        );
+        phone_book_db
+            .write_entry(
+                "Arnold".to_owned(),
+                PhoneEntry {
+                    mobile: "83750893475".to_owned(),
+                    work: "738765987364".to_owned(),
+                },
+            )
+            .unwrap();
+
+        phone_book_db
+            .write_entry(
+                "Maram".to_owned(),
+                PhoneEntry {
+                    mobile: "3535345345".to_owned(),
+                    work: "3453534562".to_owned(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            phone_book_db.read_all_entries_as_vec(None).unwrap(),
+            vec![
+                (
+                    "Arnold".to_owned(),
+                    PhoneEntry {
+                        mobile: "83750893475".to_owned(),
+                        work: "738765987364".to_owned(),
+                    },
+                ),
+                (
+                    "Maram".to_owned(),
+                    PhoneEntry {
+                        mobile: "3535345345".to_owned(),
+                        work: "3453534562".to_owned(),
+                    },
+                )
+            ]
+        );
+
+        phone_book_db.remove_entry("Arnold").unwrap();
+
+        assert_eq!(
+            phone_book_db.read_all_entries_as_vec(None).unwrap(),
+            vec![(
+                "Maram".to_owned(),
+                PhoneEntry {
+                    mobile: "3535345345".to_owned(),
+                    work: "3453534562".to_owned(),
+                }
+            )]
+        );
+
+        assert_eq!(
+            phone_book_db
+                .read_all_entries_as_vec(Some(String::from("Arnold")))
+                .unwrap(),
+            vec![]
+        );
+
+        phone_book_db.remove_entry("Maram").unwrap();
+
+        assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
+
+        assert_eq!(
+            phone_book_db
+                .read_all_entries_as_vec(Some(String::from("Arnold")))
+                .unwrap(),
+            vec![]
+        );
+        assert_eq!(
+            phone_book_db
+                .read_all_entries_as_vec(Some(String::from("Maram")))
                 .unwrap(),
             vec![]
         );
