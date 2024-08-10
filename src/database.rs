@@ -40,26 +40,6 @@ impl PhoneBookDB {
         Ok(())
     }
 
-    pub fn write_all_entries(
-        &self,
-        phone_book: &BTreeMap<String, PhoneEntry>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.create_table_if_not_exists()?;
-
-        let conn = Connection::open(&self.file_path1)?;
-
-        // To clear the table before inserting the new entries
-        conn.execute("DELETE FROM phone_book", ())?;
-        for (name, phone_entry) in phone_book.iter() {
-            conn.execute(
-                "INSERT INTO phone_book (name, phone_number, work_number) VALUES (?1, ?2, ?3)",
-                (name, &phone_entry.mobile, &phone_entry.work),
-            )?;
-        }
-
-        Ok(())
-    }
-
     pub fn remove_entry(&self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
         self.create_table_if_not_exists()?;
         let conn = Connection::open(&self.file_path1)?;
@@ -92,6 +72,18 @@ impl PhoneBookDB {
         )?;
 
         Ok(())
+    }
+
+    pub fn read_entry(
+        &self,
+        name: String,
+    ) -> Result<Option<PhoneEntry>, Box<dyn std::error::Error>> {
+        let data = self.read_all_entries_as_vec(Some(name))?;
+        if data.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(data[0].1.clone()))
+        }
     }
 
     /// Searches for names of the entries with the name you give it.
@@ -143,92 +135,19 @@ impl PhoneBookDB {
 }
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-
     use crate::{database::PhoneBookDB, entry::PhoneEntry};
 
     #[test]
     fn read_in_file() {
-        let file_path = "test_file.txt";
+        let file_path = "test_file.sqlite";
         let phone_book = PhoneBookDB::new(file_path.into());
         let data = phone_book.read_all_entries().unwrap();
         assert_eq!(data.is_empty(), true)
     }
 
     #[test]
-    fn write_in_file() {
-        let file_path = "text_file1.txt";
-        let phone_book = PhoneBookDB::new(file_path.into());
-        let data = phone_book.read_all_entries().unwrap();
-        assert_eq!(data.is_empty(), true);
-        let mut map = BTreeMap::new();
-        map.insert(
-            "cat".to_string(),
-            PhoneEntry {
-                mobile: "0".to_string(),
-                work: "1".to_string(),
-            },
-        );
-        phone_book.write_all_entries(&map).unwrap();
-        let data1 = phone_book.read_all_entries().unwrap();
-        assert_eq!(data1.contains_key("cat"), true);
-        let entry = data1.get("cat").unwrap();
-        assert_eq!(
-            entry,
-            &PhoneEntry {
-                mobile: "0".to_string(),
-                work: "1".to_string()
-            }
-        );
-        // Clean up the test file
-        std::fs::remove_file(&std::path::PathBuf::from(file_path)).unwrap();
-    }
-
-    #[test]
-    fn read_empty_file() {
-        let file_path = "test_file2.txt";
-        // Check if the file exists and if it exists delete it.
-        if std::path::PathBuf::from(file_path).exists() {
-            std::fs::remove_file(file_path).unwrap();
-        }
-        let phone_book = PhoneBookDB::new(file_path.into());
-        // Make a new map.
-        let mut map = BTreeMap::new();
-        // read the phone book database.
-        let data = phone_book
-            .read_all_entries()
-            .expect("Cannot read the data from the file.");
-        // Assert that there is no data read.
-        assert_eq!(data.is_empty(), true);
-        map.insert(
-            "Arnold".to_string(),
-            PhoneEntry {
-                mobile: "050343456".to_string(),
-                work: "05043434332".to_string(),
-            },
-        );
-        phone_book
-            .write_all_entries(&map)
-            .expect("Cannot write the map");
-        map.remove_entry(&"Arnold".to_string());
-        // Assert that there is no data read.
-        assert_eq!(map.is_empty(), true);
-        phone_book
-            .write_all_entries(&map)
-            .expect("Cannot write the map.");
-        // read the data
-        let data1 = phone_book
-            .read_all_entries()
-            .expect("Cannot read the data from the file.");
-        // Assert that there is no data read.
-        assert_eq!(data1.is_empty(), true);
-        // Clean up the file.
-        std::fs::remove_file(&std::path::PathBuf::from(file_path)).unwrap();
-    }
-
-    #[test]
     fn single_writes() {
-        let file_path = "test_file3.txt";
+        let file_path = "test_file3.sqlite";
 
         let phone_book_db = PhoneBookDB::new(file_path.into());
         phone_book_db
@@ -242,7 +161,7 @@ mod tests {
             .unwrap();
         phone_book_db
             .write_entry(
-                "Maram".to_owned(),
+                "Jack".to_owned(),
                 PhoneEntry {
                     mobile: "02875902".to_owned(),
                     work: "98270987".to_owned(),
@@ -252,7 +171,7 @@ mod tests {
 
         phone_book_db
             .write_entry(
-                "Samer".to_owned(),
+                "Mark".to_owned(),
                 PhoneEntry {
                     mobile: "375946".to_owned(),
                     work: "738749".to_owned(),
@@ -269,7 +188,7 @@ mod tests {
             },
         )));
         assert!(read_phone_book_db.contains(&(
-            "Maram".to_owned(),
+            "Jack".to_owned(),
             PhoneEntry {
                 mobile: "02875902".to_owned(),
                 work: "98270987".to_owned(),
@@ -279,7 +198,7 @@ mod tests {
 
     #[test]
     fn writes_then_reads() {
-        let file_path = "test_file_4";
+        let file_path = "test_file_4.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
         let phone_book_db = PhoneBookDB::new(file_path.into());
 
@@ -321,7 +240,7 @@ mod tests {
 
         phone_book_db
             .write_entry(
-                "Maram".to_owned(),
+                "Jack".to_owned(),
                 PhoneEntry {
                     mobile: "9870982".to_owned(),
                     work: "279573".to_owned(),
@@ -340,7 +259,7 @@ mod tests {
                     },
                 ),
                 (
-                    "Maram".to_owned(),
+                    "Jack".to_owned(),
                     PhoneEntry {
                         mobile: "9870982".to_owned(),
                         work: "279573".to_owned(),
@@ -364,10 +283,10 @@ mod tests {
 
         assert_eq!(
             phone_book_db
-                .read_all_entries_as_vec(Some(String::from("Maram")))
+                .read_all_entries_as_vec(Some(String::from("Jack")))
                 .unwrap(),
             vec![(
-                "Maram".to_owned(),
+                "Jack".to_owned(),
                 PhoneEntry {
                     mobile: "9870982".to_owned(),
                     work: "279573".to_owned(),
@@ -378,7 +297,7 @@ mod tests {
 
     #[test]
     fn unique_names() {
-        let file_path = "test_file5";
+        let file_path = "test_file5.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
         let phone_book_db = PhoneBookDB::new(file_path.into());
 
@@ -416,7 +335,7 @@ mod tests {
 
     #[test]
     fn modify_entries() {
-        let file_path = "test_file6";
+        let file_path = "test_file6.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
 
         let phone_book_db = PhoneBookDB::new(file_path.into());
@@ -433,7 +352,7 @@ mod tests {
 
         phone_book_db
             .write_entry(
-                "Maram".to_owned(),
+                "Jack".to_owned(),
                 PhoneEntry {
                     mobile: "938759834".to_owned(),
                     work: "73598739074".to_owned(),
@@ -466,14 +385,14 @@ mod tests {
     }
     #[test]
     fn modify_entries_not_exist() {
-        let file_path = "test_file7";
+        let file_path = "test_file7.sqlite";
 
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
 
         let phone_book_db = PhoneBookDB::new(file_path.into());
         phone_book_db
             .write_entry(
-                "Maram".to_owned(),
+                "Jack".to_owned(),
                 PhoneEntry {
                     mobile: "938759834".to_owned(),
                     work: "73598739074".to_owned(),
@@ -501,7 +420,7 @@ mod tests {
 
     #[test]
     fn writes_then_removes() {
-        let file_path = "test_file8.txt";
+        let file_path = "test_file8.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
 
         let phone_book_db = PhoneBookDB::new(file_path.into());
@@ -529,7 +448,7 @@ mod tests {
 
         phone_book_db
             .write_entry(
-                "Maram".to_owned(),
+                "Jack".to_owned(),
                 PhoneEntry {
                     mobile: "3535345345".to_owned(),
                     work: "3453534562".to_owned(),
@@ -548,7 +467,7 @@ mod tests {
                     },
                 ),
                 (
-                    "Maram".to_owned(),
+                    "Jack".to_owned(),
                     PhoneEntry {
                         mobile: "3535345345".to_owned(),
                         work: "3453534562".to_owned(),
@@ -562,7 +481,7 @@ mod tests {
         assert_eq!(
             phone_book_db.read_all_entries_as_vec(None).unwrap(),
             vec![(
-                "Maram".to_owned(),
+                "Jack".to_owned(),
                 PhoneEntry {
                     mobile: "3535345345".to_owned(),
                     work: "3453534562".to_owned(),
@@ -577,7 +496,7 @@ mod tests {
             vec![]
         );
 
-        phone_book_db.remove_entry("Maram").unwrap();
+        phone_book_db.remove_entry("Jack").unwrap();
 
         assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
 
@@ -589,9 +508,62 @@ mod tests {
         );
         assert_eq!(
             phone_book_db
-                .read_all_entries_as_vec(Some(String::from("Maram")))
+                .read_all_entries_as_vec(Some(String::from("Jack")))
                 .unwrap(),
             vec![]
         );
+    }
+
+    #[test]
+    fn writes_then_single_reads() {
+        let file_path = "test_file9.sqlite";
+        let phone_book_db = PhoneBookDB::new(file_path.into());
+
+        phone_book_db
+            .write_entry(
+                "Arnold".to_owned(),
+                PhoneEntry {
+                    mobile: "903795".to_owned(),
+                    work: "89347509".to_owned(),
+                },
+            )
+            .unwrap();
+
+        phone_book_db
+            .write_entry(
+                "Jack".to_owned(),
+                PhoneEntry {
+                    mobile: "37597343".to_owned(),
+                    work: "398745".to_owned(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            phone_book_db
+                .read_entry("Arnold".to_owned())
+                .unwrap()
+                .unwrap(),
+            PhoneEntry {
+                mobile: "903795".to_owned(),
+                work: "89347509".to_owned(),
+            },
+        );
+
+        assert_eq!(
+            phone_book_db
+                .read_entry("Jack".to_owned())
+                .unwrap()
+                .unwrap(),
+            PhoneEntry {
+                mobile: "37597343".to_owned(),
+                work: "398745".to_owned(),
+            }
+        );
+
+        assert!(phone_book_db
+            .read_entry("Mark".to_owned())
+            .unwrap()
+            .is_none());
     }
 }
