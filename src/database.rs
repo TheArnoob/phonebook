@@ -6,21 +6,29 @@ use std::{
 };
 
 pub struct PhoneBookDB {
-    database_file_path: PathBuf,
+    database_file_path: Option<PathBuf>,
     conn: Connection,
 }
 
 impl PhoneBookDB {
-    pub fn new(file_path: std::path::PathBuf) -> Result<PhoneBookDB, Box<dyn std::error::Error>> {
+    pub fn new(
+        file_path: Option<std::path::PathBuf>,
+    ) -> Result<PhoneBookDB, Box<dyn std::error::Error>> {
         Ok(PhoneBookDB {
             database_file_path: file_path.clone(),
-            conn: Connection::open(file_path)?,
+            conn: match file_path {
+                Some(file_path) => Connection::open(file_path)?,
+                None => Connection::open_in_memory()?,
+            },
         })
     }
 
     #[allow(dead_code)]
-    pub fn file_path(&self) -> &Path {
-        &self.database_file_path
+    pub fn file_path(&self) -> Option<&Path> {
+        match &self.database_file_path {
+            Some(file_path) => Some(file_path),
+            None => None,
+        }
     }
 
     fn create_table_if_not_exists(&self) -> Result<()> {
@@ -143,17 +151,14 @@ mod tests {
 
     #[test]
     fn read_in_file() {
-        let file_path = "test_file.sqlite";
-        let phone_book = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book = PhoneBookDB::new(None).unwrap();
         let data = phone_book.read_all_entries().unwrap();
         assert_eq!(data.is_empty(), true)
     }
 
     #[test]
     fn single_writes() {
-        let file_path = "test_file3.sqlite";
-
-        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book_db = PhoneBookDB::new(None).unwrap();
         phone_book_db
             .write_entry(
                 "Arnold".to_owned(),
@@ -202,9 +207,7 @@ mod tests {
 
     #[test]
     fn writes_then_reads() {
-        let file_path = "test_file_4.sqlite";
-        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
-        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book_db = PhoneBookDB::new(None).unwrap();
 
         assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
 
@@ -301,9 +304,7 @@ mod tests {
 
     #[test]
     fn unique_names() {
-        let file_path = "test_file5.sqlite";
-        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
-        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book_db = PhoneBookDB::new(None).unwrap();
 
         phone_book_db
             .write_entry(
@@ -339,10 +340,7 @@ mod tests {
 
     #[test]
     fn modify_entries() {
-        let file_path = "test_file6.sqlite";
-        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
-
-        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book_db = PhoneBookDB::new(None).unwrap();
 
         phone_book_db
             .write_entry(
@@ -389,11 +387,7 @@ mod tests {
     }
     #[test]
     fn modify_entries_not_exist() {
-        let file_path = "test_file7.sqlite";
-
-        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
-
-        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book_db = PhoneBookDB::new(None).unwrap();
         phone_book_db
             .write_entry(
                 "Jack".to_owned(),
@@ -424,10 +418,7 @@ mod tests {
 
     #[test]
     fn writes_then_removes() {
-        let file_path = "test_file8.sqlite";
-        let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
-
-        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book_db = PhoneBookDB::new(None).unwrap();
 
         assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
 
@@ -520,8 +511,7 @@ mod tests {
 
     #[test]
     fn writes_then_single_reads() {
-        let file_path = "test_file9.sqlite";
-        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
+        let phone_book_db = PhoneBookDB::new(None).unwrap();
 
         phone_book_db
             .write_entry(
