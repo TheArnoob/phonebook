@@ -7,7 +7,8 @@ use crate::entry::PhoneEntry;
 use prettytable::{row, Table};
 fn main() {
     loop {
-        let phone_book_db = database::PhoneBookDB::new(FILE_NAME.into());
+        let phone_book_db =
+            database::PhoneBookDB::new(FILE_NAME.into()).expect("Failed to open file.");
         println!("Please enter one of these commands:");
         let command = get_input_from_user("show, add, remove, modify, exit");
         if command == "show" {

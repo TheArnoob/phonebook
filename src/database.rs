@@ -1,22 +1,30 @@
 use crate::entry::PhoneEntry;
 use rusqlite::{params, Connection, Result};
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 pub struct PhoneBookDB {
-    file_path1: PathBuf,
+    database_file_path: PathBuf,
+    conn: Connection,
 }
 
 impl PhoneBookDB {
-    pub fn new(file_path: std::path::PathBuf) -> PhoneBookDB {
-        PhoneBookDB {
-            file_path1: file_path,
-        }
+    pub fn new(file_path: std::path::PathBuf) -> Result<PhoneBookDB, Box<dyn std::error::Error>> {
+        Ok(PhoneBookDB {
+            database_file_path: file_path.clone(),
+            conn: Connection::open(file_path)?,
+        })
+    }
+
+    #[allow(dead_code)]
+    pub fn file_path(&self) -> &Path {
+        &self.database_file_path
     }
 
     fn create_table_if_not_exists(&self) -> Result<()> {
-        let conn = Connection::open(&self.file_path1)?;
-
-        conn.execute(
+        self.conn.execute(
             "CREATE TABLE IF NOT EXISTS
          phone_book (name TEXT NOT NULL, phone_number TEXT NOT NULL, work_number TEXT NOT NULL)",
             (),
@@ -31,8 +39,7 @@ impl PhoneBookDB {
         entry: PhoneEntry,
     ) -> Result<(), Box<dyn std::error::Error>> {
         self.create_table_if_not_exists()?;
-        let conn = Connection::open(&self.file_path1)?;
-        conn.execute(
+        self.conn.execute(
             "UPDATE phone_book SET phone_number = ?2, work_number = ?3 WHERE name = ?1",
             [&name, &entry.mobile, &entry.work],
         )?;
@@ -42,9 +49,8 @@ impl PhoneBookDB {
 
     pub fn remove_entry(&self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
         self.create_table_if_not_exists()?;
-        let conn = Connection::open(&self.file_path1)?;
-
-        conn.execute("DELETE FROM phone_book WHERE name = ?1", [name])?;
+        self.conn
+            .execute("DELETE FROM phone_book WHERE name = ?1", [name])?;
         Ok(())
     }
     pub fn read_all_entries(
@@ -62,11 +68,10 @@ impl PhoneBookDB {
         entry: PhoneEntry,
     ) -> Result<(), Box<dyn std::error::Error>> {
         self.create_table_if_not_exists()?;
+        self.conn
+            .execute("DELETE FROM phone_book WHERE name = ?1", [&name])?;
 
-        let conn = Connection::open(&self.file_path1)?;
-        conn.execute("DELETE FROM phone_book WHERE name = ?1", [&name])?;
-
-        conn.execute(
+        self.conn.execute(
             "INSERT INTO phone_book (name, phone_number, work_number) VALUES(?1, ?2, ?3)",
             (name, entry.mobile, entry.work),
         )?;
@@ -95,14 +100,13 @@ impl PhoneBookDB {
         name: Option<String>,
     ) -> Result<Vec<(String, PhoneEntry)>, Box<dyn std::error::Error>> {
         self.create_table_if_not_exists()?;
-
-        let conn = Connection::open(&self.file_path1)?;
-
         let mut stmt = match &name {
-            Some(_name) => conn.prepare(
+            Some(_name) => self.conn.prepare(
                 "SELECT name, phone_number, work_number FROM phone_book WHERE name = ?1",
             )?,
-            None => conn.prepare("SELECT name, phone_number, work_number FROM phone_book")?,
+            None => self
+                .conn
+                .prepare("SELECT name, phone_number, work_number FROM phone_book")?,
         };
 
         let params = match &name {
@@ -140,7 +144,7 @@ mod tests {
     #[test]
     fn read_in_file() {
         let file_path = "test_file.sqlite";
-        let phone_book = PhoneBookDB::new(file_path.into());
+        let phone_book = PhoneBookDB::new(file_path.into()).unwrap();
         let data = phone_book.read_all_entries().unwrap();
         assert_eq!(data.is_empty(), true)
     }
@@ -149,7 +153,7 @@ mod tests {
     fn single_writes() {
         let file_path = "test_file3.sqlite";
 
-        let phone_book_db = PhoneBookDB::new(file_path.into());
+        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
         phone_book_db
             .write_entry(
                 "Arnold".to_owned(),
@@ -200,7 +204,7 @@ mod tests {
     fn writes_then_reads() {
         let file_path = "test_file_4.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
-        let phone_book_db = PhoneBookDB::new(file_path.into());
+        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
 
         assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
 
@@ -299,7 +303,7 @@ mod tests {
     fn unique_names() {
         let file_path = "test_file5.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
-        let phone_book_db = PhoneBookDB::new(file_path.into());
+        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
 
         phone_book_db
             .write_entry(
@@ -338,7 +342,7 @@ mod tests {
         let file_path = "test_file6.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
 
-        let phone_book_db = PhoneBookDB::new(file_path.into());
+        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
 
         phone_book_db
             .write_entry(
@@ -389,7 +393,7 @@ mod tests {
 
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
 
-        let phone_book_db = PhoneBookDB::new(file_path.into());
+        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
         phone_book_db
             .write_entry(
                 "Jack".to_owned(),
@@ -423,7 +427,7 @@ mod tests {
         let file_path = "test_file8.sqlite";
         let _ = std::fs::remove_file(&std::path::PathBuf::from(file_path));
 
-        let phone_book_db = PhoneBookDB::new(file_path.into());
+        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
 
         assert_eq!(phone_book_db.read_all_entries_as_vec(None).unwrap(), vec![]);
 
@@ -517,7 +521,7 @@ mod tests {
     #[test]
     fn writes_then_single_reads() {
         let file_path = "test_file9.sqlite";
-        let phone_book_db = PhoneBookDB::new(file_path.into());
+        let phone_book_db = PhoneBookDB::new(file_path.into()).unwrap();
 
         phone_book_db
             .write_entry(
